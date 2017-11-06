@@ -1,0 +1,27 @@
+# Root file system and images, compressed files
+.mount.point
+*.fs
+*.dd
+*.img
+*.ext*
+*.tar*
+bootfs
+rootfs
+
+# Linux images
+zImage
+uImage
+vmlinux
+*.dtb
+*.dts
+
+# Config files
+.config
+*.config
+BOOT.bin
+
+# Other files
+linux-xlnx/
+mbrfs
+mbrfs.c
+rootfs/
