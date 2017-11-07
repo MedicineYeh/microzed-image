@@ -149,3 +149,5 @@ source "${SCRIPT_DIR}/utils.sh"
 
 # Run the main function of the build system with perfect argument forwarding (escape spaces)
 build_system_main "$@"
+
+exit 0
