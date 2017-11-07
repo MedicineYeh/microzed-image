@@ -101,7 +101,6 @@ function rm_and_mkdir() {
 # Returns:
 #   None
 #######################################
-# Creating a image with partition table
 function create_guest_image() {
     local image_file="$1"
     local num_sectors=$[ $(numfmt --from=iec ${2:-0}) / 512 ]
@@ -115,6 +114,48 @@ function create_guest_image() {
     # Transform the rest of input args to a line separated string
     sfdisk_script=$(printf '%s\n' "${@}")
     echo "$sfdisk_script" | sfdisk -uS $image_file
+}
+
+#######################################
+# Create an image with partition table(MBR)
+# The size of each partition is fixed for easy reading
+# and the best compatibility.
+# Example create_guest_image_fixed rootfs.img 4G
+# Globals:
+#   None
+# Arguments:
+#   <IMAGE NAME>
+#   <IMAGE SIZE>
+# Returns:
+#   None
+#######################################
+function create_guest_image_fixed() {
+    local image_file="$1"
+    local num_sectors=$[ $(numfmt --from=iec ${2:-0}) / 512 ]
+
+    # Remove the old file in order to overwrite the output file
+    rm -f "$image_file"
+    dd if=/dev/zero of=$image_file bs=512 seek=$[ $num_sectors - 1 ] count=1
+    [[ $? != 0 ]] && print_message_and_exit "Allocate $image_file with size $image_size"
+
+sed -e 's/\s*\([\+0-9a-zA-Z]*\).*/\1/' << EOF | fdisk ${image_file}
+  o # clear the in memory partition table
+  n # new partition
+  p # primary partition
+  1 # partition number 1
+    # default - start at beginning of disk
+  +100M # 100 MB boot parttion
+  n # new partition
+  p # primary partition
+  2 # partion number 2
+    # default, start immediately after preceding partition
+    # default, extend partition to end of disk
+  a # make a partition bootable
+  1 # bootable partition is partition 1 -- /dev/sda1
+  p # print the in-memory partition table
+  w # write the partition table
+  q # and we're done
+EOF
 }
 
 #######################################

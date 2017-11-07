@@ -70,7 +70,7 @@ function build() {
 # Generate/install the files (will be run in root user)
 function post_install() {
     # Set up third-party binaries first
-    export PATH="$PATH":"${BUILD_DIR}/mbrfs"
+    PATH="$PATH":"${BUILD_DIR}/mbrfs"
     # Copy linux files
     cp "./${kernel_folder}/arch/arm/boot/zImage" ./zImage
     cp "./${kernel_folder}/arch/arm/boot/dts/zynq-zed.dtb" ./devicetree.dtb
@@ -117,12 +117,13 @@ function compile_image() {
     cd "${BUILD_DIR}"
 
     # Quietly force umount with always true to surpress the error codes
-    LD_PRELOAD='' fusermount -quz "$tmp_mountpoint" | true
+    LD_PRELOAD='' fusermount -quz "$tmp_mountpoint" || true
     # Create dir if not present
     mkdir -p "$tmp_mountpoint"
 
     # Create a guest image with size 4G and assigning the spaces of partitions
-    create_guest_image "$image_file" 4G "size=50M, type=c" "size=4G, type=83"
+    # create_guest_image_fixed "$image_file" 4G
+    create_guest_image "$image_file" 4G "size=50M, type=b" "size=4G, type=83"
     mbrfs "$image_file" "$tmp_mountpoint"
     [[ $? != 0 ]] && print_message_and_exit "Mount(FUSE) $image_file to $tmp_mountpoint"
 
@@ -137,7 +138,7 @@ function compile_image() {
 
     sync
     # Quietly force umount with always true to surpress the error codes
-    LD_PRELOAD='' fusermount -quz "$tmp_mountpoint" | true
+    LD_PRELOAD='' fusermount -quz "$tmp_mountpoint" || true
 }
 
 # =================================
