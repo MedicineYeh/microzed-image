@@ -1,0 +1,26 @@
+dist: trusty
+sudo: required
+
+git:
+  submodules: false
+
+addons:
+  apt:
+    packages:
+    - sudo
+
+before_install:
+    - sudo apt-get -qq update
+    - git clone https://github.com/MedicineYeh/axiom-beta-env
+    - cd $TRAVIS_BUILD_DIR/axiom-beta-env
+    - sudo ./install.sh
+    - echo -e 'y\n' | ./prepare_all.sh -i
+    - source ./install_command.sh
+
+# Do not use root to test the script
+script:
+    - cd $TRAVIS_BUILD_DIR
+    - bash ./build.sh
+
+notifications:
+  email: false
