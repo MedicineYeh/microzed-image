@@ -149,7 +149,10 @@ function inform_sudo() {
 #######################################
 function sources_auto_download() {
     for index in "${!files[@]}"; do
-        [[ ! -f "${files[$index]}" ]] && wget -c "${sources[$index]}" -O "${files[$index]}"
+        local tmp_file="${files[$index]}.download"
+        [[ ! -f "${files[$index]}" ]] && wget -c "${sources[$index]}" -O "$tmp_file"
+        [[ $? == 0 ]] && mv "$tmp_file" "${files[$index]}"
+        [[ ! -f "${files[$index]}" ]] && print_message_and_exit "Download '${files[$index]}'"
         check_sha256 "${files[$index]}" ${sha256sums[$index]}
         [[ $? != 0 ]] && print_message_and_exit "'${files[$index]}' sha256sum does not match!!"
     done
