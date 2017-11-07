@@ -2,6 +2,8 @@
 
 # NOTE: ${BASH_SOURCE[0]} is 'utils.sh' while $0 is 'build.sh'
 SCRIPT_DIR=$(readlink -f "$(dirname "${BASH_SOURCE[0]}")")
+BUILD_DIR="${SCRIPT_DIR}/build"
+INSTALL_DIR="${SCRIPT_DIR}"
 BUILD_SCRIPT=$(readlink -f "$0")
 
 COLOR_YELLOW='\033[1;33m'
@@ -154,6 +156,30 @@ function sources_auto_download() {
 }
 
 #######################################
+# Install the generated files with symbolic links
+# Globals:
+#   file_name  -> path of file relative to $BUILD_DIR
+#   [new_name] -> (optional) path of file to be installed/renamed relative to $INSTALL_DIR
+# Arguments:
+#   None
+# Returns:
+#   succeed:0 / failed:1
+#######################################
+function install_binary() {
+    local file_name="$1"
+    local new_name="$2"
+
+    [[ "$file_name" == "" ]] && return 1
+    # Overwrite if and only if it's not a regular file for safety
+    if [[ -f "${INSTALL_DIR}/${new_name}" ]]; then
+        echo -e "File ${COLOR_RED}${INSTALL_DIR}/${new_name}${NC} exists and not a symbolic file"
+        return 1
+    else
+        ln -sf "$BUILD_DIR/${file_name}" "${INSTALL_DIR}/${new_name}"
+    fi
+}
+
+#######################################
 # The main function of the simple build system
 # Globals:
 # pre_install   -> a function to prepare all the files and sources for latter use
@@ -168,21 +194,23 @@ function sources_auto_download() {
 function build_system_main() {
     # Change the root directory first
     cd "$SCRIPT_DIR"
+    echo -e "Creating build directory: ${COLOR_GREEN}${BUILD_DIR}${NC}"
+    mkdir -p "$BUILD_DIR"
 
     if [[ "$(whoami)" == "root" ]]; then
         # Runs post system only when we are in fakeroot environment
         echo -e "Running ${COLOR_GREEN}post_install${NC}"
-        cd "$SCRIPT_DIR" && post_install
+        cd "$BUILD_DIR" && post_install
     else
         # Change the root directory on every function call for consistent working directory
         echo -e "Running ${COLOR_GREEN}sources_auto_download${NC}"
-        sources_auto_download
+        cd "$BUILD_DIR" && sources_auto_download
         echo -e "Running ${COLOR_GREEN}pre_install${NC}"
-        cd "$SCRIPT_DIR" && pre_install
+        cd "$BUILD_DIR" && pre_install
         echo -e "Running ${COLOR_GREEN}prepare${NC}"
-        cd "$SCRIPT_DIR" && prepare
+        cd "$BUILD_DIR" && prepare
         echo -e "Running ${COLOR_GREEN}build${NC}"
-        cd "$SCRIPT_DIR" && build
+        cd "$BUILD_DIR" && build
         echo -e "${COLOR_GREEN}Entering faked root env${NC}"
         cd "$SCRIPT_DIR" && fakeroot $BUILD_SCRIPT "$@"
     fi
