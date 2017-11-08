@@ -117,7 +117,7 @@ function patch_rootfs() {
     echo "axiom-beta" > etc/hostname
     echo "PermitRootLogin no" >> etc/ssh/sshd_config
     echo "X11Forwarding yes" >> etc/ssh/sshd_config
-    echo "apertus° AXIOM Beta Booted!" > etc/issue
+    echo "apertus AXIOM Beta Booted!" > etc/issue
     echo "Login as apertus with password axiom" >> etc/issue
     echo 'echo -e "\033[31;5municorns dont log in as root\033[0m"' >> root/.profile
 
