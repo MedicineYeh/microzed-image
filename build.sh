@@ -50,9 +50,6 @@ function prepare() {
     [[ $? != 0 ]] && print_message_and_exit "${config_name} does not existed"
     make CROSS_COMPILE=$CROSS ARCH=$ARCH oldconfig
     [[ $? != 0 ]] && print_message_and_exit "Setting up linux kernel config"
-
-    rm_and_mkdir "${BUILD_DIR}/${rootfs}"
-    rm_and_mkdir "${BUILD_DIR}/${bootfs}"
 }
 
 # Build the source codes
@@ -69,6 +66,9 @@ function build() {
 
 # Generate/install the files (will be run in root user)
 function post_install() {
+    rm_and_mkdir "${BUILD_DIR}/${rootfs}"
+    rm_and_mkdir "${BUILD_DIR}/${bootfs}"
+
     # Set up third-party binaries first
     PATH="$PATH":"${BUILD_DIR}/mbrfs"
     # Copy linux files
@@ -80,6 +80,7 @@ function post_install() {
     cp ./{zImage,BOOT.bin} "./${bootfs}"
     # Copy all the prebuilt files from microzed-boot to created bootfs folder
     cp "${SCRIPT_DIR}"/microzed-boot/* "./${bootfs}"
+    [[ $? != 0 ]] && print_message_and_exit "Copy files to '${bootfs}'"
 
     cd ${BUILD_DIR}
     echo "Decompressing template rootfs file... (this may take a while)"
