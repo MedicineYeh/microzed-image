@@ -188,6 +188,41 @@ function test_binfmt_enabled() {
 }
 
 #######################################
+# A simple wrapper function to help get the user:group id
+# This function will echo a string in the form of USER_ID:GROUP_ID
+# Globals:
+#   None
+# Arguments:
+#   <FILE/DIR PATH>
+# Returns:
+#   None
+#######################################
+function get_user_group_id() {
+    # stat file only when exist
+    [[ -r "$1" ]] && stat -c "%u:%g" "$1"
+}
+
+#######################################
+# A simple wrapper function to help copy files in destination ownership
+# Globals:
+#   None
+# Arguments:
+#   <SOURCE FILE/DIR PATH>
+#   <DESTINATION FILE/DIR PATH>
+# Returns:
+#   succeed:0 / failed:1
+#######################################
+function cp_target_owner() {
+    local src="$1"
+    local dst="$2"
+    local dst_owner=$(get_user_group_id "$dst")
+    [[ "$dst_owner" == "" ]] && dst_owner=$(get_user_group_id "$(dirname $dst)")
+    [[ "$dst_owner" == "" ]] && print_message_and_exit "Cannot find/get state of '$dst'"
+    rsync -a -o -g --chown=$dst_owner "$src" "$dst"
+    return $?
+}
+
+#######################################
 # A simple wrapper to execute a command with sudo and tell user what it is.
 # This is useful to show useful messages on why aquiring the root privileges.
 # Globals:
