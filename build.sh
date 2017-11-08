@@ -110,9 +110,33 @@ function post_install() {
     [[ -L "${INSTALL_DIR}/runQEMU.sh" ]] && install_binary "../runQEMU.sh"
 }
 
+function bootstrap_guest_with_sudo() {
+    local rootfs="$1"
+
+    LD_PRELOAD=''
+    cp $(which qemu-arm-static) "${rootfs}/usr/bin"
+    cp $(which qemu-aarch64-static) "${rootfs}/usr/bin"
+
+    inform_sudo mount --rbind "$rootfs" "$rootfs"
+    inform_sudo mount -t proc /proc "${rootfs}/proc"
+    inform_sudo mount -o bind /dev "${rootfs}/dev"
+    inform_sudo mount -o bind /dev/pts "${rootfs}/dev/pts"
+    inform_sudo mount -o bind /sys "${rootfs}/sys"
+
+    inform_sudo chroot "$rootfs"
+
+    local rootfs="$1"
+    mountpoint -q "$rootfs" && inform_sudo umount -lR "$rootfs"
+}
+
 # Patch the root file system (Note: This function would be run in a faked root user env)
 function patch_rootfs() {
+    local rootfs="$1"
     echo "To be implemented: patch_rootfs()"
+
+    test_binfmt_enabled qemu-aarch64 qemu-arm
+    # Run it with () which is a separate env, all env changes won't affect our script
+    #(bootstrap_guest_with_sudo "$rootfs")
 }
 
 # Build up guest image (Note: This function would be run in a faked root user env)
