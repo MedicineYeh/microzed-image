@@ -108,7 +108,37 @@ function post_install() {
 
 # Patch the root file system (Note: This function would be run in a faked root user env)
 function patch_rootfs() {
-    echo "To be implemented: patch_rootfs()"
+    # chroot!!! lol
+    cd "${BUILD_DIR}/${rootfs}"
+    [[ "$(pwd)" != "${BUILD_DIR}/${rootfs}" ]] && print_message_and_exit "cd to guest root directory"
+    # ignore linux kernel packages
+    sed -i 's/#IgnorePkg   =/IgnorePkg = linux linux-*/' etc/pacman.conf
+    # setup hostname, network, basic ssh safety, login messages
+    echo "axiom-beta" > etc/hostname
+    echo "PermitRootLogin no" >> etc/ssh/sshd_config
+    echo "X11Forwarding yes" >> etc/ssh/sshd_config
+    echo "apertus° AXIOM Beta Booted!" > etc/issue
+    echo "Login as apertus with password axiom" >> etc/issue
+    echo 'echo -e "\033[31;5municorns dont log in as root\033[0m"' >> root/.profile
+
+
+    local USERNAME=apertus
+    local PASS=axiom
+    # Replace username: (with ":" to ensure reaching the end of a name)
+    sed -i -e "s/alarm:/${USERNAME}:/g" etc/passwd
+    sed -i -e "s/alarm:/${USERNAME}:/g" etc/group
+    # Remove the coount of alarm
+    sed -i -e "s/alarm:[^:]*://g" etc/shadow
+    # Add passwd of the new account
+    echo "${USERNAME}:$(openssl passwd -1 $PASS):17471:0:99999:7:::" >> etc/shadow
+    echo "$USERNAME      ALL=(ALL) ALL" >> etc/sudoers
+    mv home/alarm "home/${USERNAME}"
+
+
+    # Install scripts and README to target directory
+    echo "Please run install scripts of beta-software" > GUEST_README
+    cp_target_owner GUEST_README "home/${USERNAME}/README"
+    [[ $? != 0 ]] && print_message_and_exit "Copy files into guest image"
 }
 
 # Build up guest image (Note: This function would be run in a faked root user env)
