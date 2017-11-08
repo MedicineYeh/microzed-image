@@ -160,6 +160,34 @@ EOF
 }
 
 #######################################
+# A simple function to help checking the availability of binfmts
+# Example: test_binfmt_enabled qemu-aarch64 qemu-arm
+# Globals:
+#   None
+# Arguments:
+#   [NAMES ...]
+# Returns:
+#   None
+#######################################
+function test_binfmt_enabled() {
+    if [[ ! -d /proc/sys/fs/binfmt_misc ]]; then
+        # NOTE: This should be a service and mounted before any operation
+        print_message_and_exit "binfmt_misc is not mounted, Please try
+        'sudo mount binfmt_misc -t binfmt_misc /proc/sys/fs/binfmt_misc'"
+    fi
+    if [[ "$(update-binfmts --version)" == "" ]]; then
+        print_message_and_exit "Please install command update-binfmts"
+    fi
+
+    for name in "${@}"; do
+        str=$(update-binfmts --test --enable "$name" 2>&1 | grep "already enabled")
+        # No enabled message in the output
+        [[ "$str" == "" ]] && print_message_and_exit "Cannot find $name in binfmt Please run
+        'sudo update-binfmts --enable $name'"
+    done
+}
+
+#######################################
 # A simple wrapper to execute a command with sudo and tell user what it is.
 # This is useful to show useful messages on why aquiring the root privileges.
 # Globals:
@@ -258,6 +286,7 @@ function build_system_main() {
         cd "$BUILD_DIR" && build
         echo -e "${COLOR_GREEN}Entering faked root env${NC}"
         touch "${BUILD_DIR}/${FAKEROOT_ENV}"
-        cd "$SCRIPT_DIR" && fakeroot -i $FAKEROOT_ENV -s $FAKEROOT_ENV -- $BUILD_SCRIPT "$@"
+        # Do not load env here. If the script touches real root files, it might cause some problems.
+        cd "$SCRIPT_DIR" && fakeroot -s $FAKEROOT_ENV -- $BUILD_SCRIPT "$@"
     fi
 }
