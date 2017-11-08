@@ -75,7 +75,8 @@ function unfold() {
 }
 
 #######################################
-# A simple wrapper to remove and create a directory
+# A simple wrapper to remove and create a directory.
+# Use it with caution!!!!!!!!!
 # Globals:
 #   None
 # Arguments:
@@ -84,9 +85,8 @@ function unfold() {
 #   None
 #######################################
 function rm_and_mkdir() {
-    cd "${SCRIPT_DIR}" # This is a safety in case someone gives a relative path
-    rm -rf $1
-    mkdir -p $1
+    rm -rf "$1"
+    mkdir -p "$1"
 }
 
 #######################################
