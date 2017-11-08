@@ -5,6 +5,7 @@ SCRIPT_DIR=$(readlink -f "$(dirname "${BASH_SOURCE[0]}")")
 BUILD_DIR="${SCRIPT_DIR}/build"
 INSTALL_DIR="${SCRIPT_DIR}"
 BUILD_SCRIPT=$(readlink -f "$0")
+FAKEROOT_ENV="fakeroot.env"
 
 COLOR_YELLOW='\033[1;33m'
 COLOR_RED='\033[1;31m'
@@ -256,6 +257,7 @@ function build_system_main() {
         echo -e "Running ${COLOR_GREEN}build${NC}"
         cd "$BUILD_DIR" && build
         echo -e "${COLOR_GREEN}Entering faked root env${NC}"
-        cd "$SCRIPT_DIR" && fakeroot $BUILD_SCRIPT "$@"
+        touch "${BUILD_DIR}/${FAKEROOT_ENV}"
+        cd "$SCRIPT_DIR" && fakeroot -i $FAKEROOT_ENV -s $FAKEROOT_ENV -- $BUILD_SCRIPT "$@"
     fi
 }
