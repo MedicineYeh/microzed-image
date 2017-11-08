@@ -29,6 +29,7 @@ sha256sums=('ecc33bfcf9a66d766870953bacf0b5313798c60c988f5c96bcce397c74fd7120'
 # Prepare all the files and sources for latter use
 function pre_install() {
     [[ ! -d "mbrfs" ]] && git clone https://github.com/snippits/mbrfs
+    [[ ! -d "arch-install-scripts" ]] && git clone https://github.com/falconindy/arch-install-scripts
 
     # Alternative ways of downloading the linux kernel, but hard to have a centeralized control
     #local kernel_link='https://github.com/Xilinx/linux-xlnx.git'
@@ -65,12 +66,16 @@ function build() {
     # Build helper for mounting the mbr file system
     cd "${BUILD_DIR}/mbrfs" && make
     [[ $? != 0 ]] && print_message_and_exit "Build mbrfs"
+
+    # Build helper for chroot
+    cd "${BUILD_DIR}/arch-install-scripts" && make
+    [[ $? != 0 ]] && print_message_and_exit "Build arch-install-scripts"
 }
 
 # Generate/install the files (will be run in root user)
 function post_install() {
     # Set up third-party binaries first
-    PATH="$PATH":"${BUILD_DIR}/mbrfs"
+    PATH="$PATH":"${BUILD_DIR}/mbrfs":"${BUILD_DIR}/arch-install-scripts"
     # Copy linux files
     cp "./${kernel_folder}/arch/arm/boot/zImage" ./zImage
     cp "./${kernel_folder}/arch/arm/boot/dts/zynq-zed.dtb" ./devicetree.dtb
