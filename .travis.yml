@@ -1,6 +1,10 @@
 dist: trusty
 sudo: required
 
+stages:
+  - build
+  - deploy
+
 git:
   submodules: false
 
@@ -21,6 +25,36 @@ before_install:
 script:
     - cd $TRAVIS_BUILD_DIR
     - bash ./build.sh
+
+download:
+  stage: build
+  script:
+    - cd $TRAVIS_BUILD_DIR && ./build.sh sources_auto_download
+
+pre_install:
+  stage: build
+  script:
+    - cd $TRAVIS_BUILD_DIR && ./build.sh pre_install
+
+prepare:
+  stage: build
+  script:
+    - cd $TRAVIS_BUILD_DIR && ./build.sh prepare
+
+build_package:
+  stage: build
+  script:
+    - cd $TRAVIS_BUILD_DIR && ./build.sh build
+
+post_install:
+  stage: build
+  script:
+    - cd $TRAVIS_BUILD_DIR && ./build.sh post_install
+
+update_image:
+  stage: deploy
+  script:
+    - cd $TRAVIS_BUILD_DIR && echo "hi"
 
 notifications:
   email: false
