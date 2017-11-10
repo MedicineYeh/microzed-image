@@ -13,6 +13,41 @@ COLOR_GREEN='\033[1;32m'
 NC='\033[0m'
 
 #######################################
+# Check whether the function is defined
+# Globals:
+#   None
+# Arguments:
+#   <FUNCTION>
+# Returns:
+#   succeed:0 / failed:1
+#######################################
+function function_exists() {
+    declare -f -F $1 > /dev/null
+    return $?
+}
+
+#######################################
+# Call a function only when it presents
+# Globals:
+#   None
+# Arguments:
+#   <FUNCTION>
+# Returns:
+#   None
+#######################################
+function invoke() {
+    declare -f -F $1 > /dev/null
+    if [[ $? == 0 ]]; then
+        echo -e "Running ${COLOR_GREEN}${1}${NC}"
+        $1
+        return 0
+    else
+        return 1
+    fi
+}
+
+
+#######################################
 # Check the sha256sum and return 0 when succeed.
 # Always return 0 if the first argument is an empty string.
 # Globals:
@@ -139,7 +174,7 @@ function create_guest_image_fixed() {
     dd if=/dev/zero of=$image_file bs=512 seek=$[ $num_sectors - 1 ] count=1
     [[ $? != 0 ]] && print_message_and_exit "Allocate $image_file with size $image_size"
 
-sed -e 's/\s*\([\+0-9a-zA-Z]*\).*/\1/' << EOF | fdisk ${image_file}
+    sed -e 's/\s*\([\+0-9a-zA-Z]*\).*/\1/' << EOF | fdisk ${image_file}
   o # clear the in memory partition table
   n # new partition
   p # primary partition
@@ -288,6 +323,24 @@ function install_binary() {
 }
 
 #######################################
+# Install the generated files with symbolic links
+# Globals:
+#   FAKEROOT_ENV  -> path of file relative to store fakeroot env
+# Arguments:
+#   None
+# Returns:
+#   None
+#######################################
+function enter_fake_root() {
+    # Prepare to enter the last step
+    echo -e "${COLOR_GREEN}Entering faked root env${NC}"
+    touch "${BUILD_DIR}/${FAKEROOT_ENV}"
+    # Do not load env here. If the script touches real root files, it might cause some problems.
+    cd "$SCRIPT_DIR" && fakeroot -s $FAKEROOT_ENV -- $BUILD_SCRIPT "$@"
+    echo -e "${COLOR_GREEN}Done${NC}"
+}
+
+#######################################
 # The main function of the simple build system
 # Globals:
 # pre_install   -> a function to prepare all the files and sources for latter use
@@ -306,22 +359,25 @@ function build_system_main() {
     mkdir -p "$BUILD_DIR"
 
     if [[ "$(whoami)" == "root" ]]; then
+        cd "$BUILD_DIR"
         # Runs post system only when we are in fakeroot environment
-        echo -e "Running ${COLOR_GREEN}post_install${NC}"
-        cd "$BUILD_DIR" && post_install
+        (invoke post_install)
     else
-        # Change the root directory on every function call for consistent working directory
-        echo -e "Running ${COLOR_GREEN}sources_auto_download${NC}"
-        cd "$BUILD_DIR" && sources_auto_download
-        echo -e "Running ${COLOR_GREEN}pre_install${NC}"
-        cd "$BUILD_DIR" && pre_install
-        echo -e "Running ${COLOR_GREEN}prepare${NC}"
-        cd "$BUILD_DIR" && prepare
-        echo -e "Running ${COLOR_GREEN}build${NC}"
-        cd "$BUILD_DIR" && build
-        echo -e "${COLOR_GREEN}Entering faked root env${NC}"
-        touch "${BUILD_DIR}/${FAKEROOT_ENV}"
-        # Do not load env here. If the script touches real root files, it might cause some problems.
-        cd "$SCRIPT_DIR" && fakeroot -s $FAKEROOT_ENV -- $BUILD_SCRIPT "$@"
+        cd "$BUILD_DIR"
+        if [[ -z "$1" ]]; then
+            # Use () to call functions for consistent working directory
+            (invoke sources_auto_download)
+            (invoke pre_install)
+            (invoke prepare)
+            (invoke build)
+            (enter_fake_root)
+        else
+            # User defined build stage
+            [[ "$1" == "sources_auto_download" ]] && (invoke sources_auto_download)
+            [[ "$1" == "pre_install" ]] && (invoke pre_install)
+            [[ "$1" == "prepare" ]] && (invoke prepare)
+            [[ "$1" == "build" ]] && (invoke build)
+            [[ "$1" == "post_install" ]] && (enter_fake_root)
+        fi
     fi
 }
