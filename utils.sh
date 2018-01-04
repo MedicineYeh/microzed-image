@@ -46,6 +46,23 @@ function invoke() {
     fi
 }
 
+#######################################
+# Check whether the command exist in a safe way
+# Globals:
+#   None
+# Arguments:
+#   <command>
+# Returns:
+#   0: found, 1: NOT found
+#######################################
+function command_exist() {
+    command_found=$(command -v "$1" 2> /dev/null)
+    if [[ "$command_found" == "" ]]; then
+        return 1 # NOT found
+    else
+        return 0 # Found
+    fi
+}
 
 #######################################
 # Check the sha256sum and return 0 when succeed.
