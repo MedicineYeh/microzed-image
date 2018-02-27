@@ -394,25 +394,23 @@ function build_system_main() {
     mkdir -p "$BUILD_DIR"
 
     if [[ "$(whoami)" == "root" ]]; then
-        cd "$BUILD_DIR"
         # Runs post system only when we are in fakeroot environment
-        (invoke post_install)
+        cd "$BUILD_DIR" && invoke post_install
     else
-        cd "$BUILD_DIR"
         if [[ -z "$1" ]]; then
-            # Use () to call functions for consistent working directory
-            (invoke sources_auto_download)
-            (invoke pre_install)
-            (invoke prepare)
-            (invoke build)
-            (enter_fake_root)
+            cd "$BUILD_DIR" && invoke sources_auto_download
+            cd "$BUILD_DIR" && invoke pre_install
+            cd "$BUILD_DIR" && invoke prepare
+            cd "$BUILD_DIR" && invoke build
+            cd "$BUILD_DIR" && enter_fake_root
         else
+            cd "$BUILD_DIR"
             # User defined build stage
-            [[ "$1" == "sources_auto_download" ]] && (invoke sources_auto_download)
-            [[ "$1" == "pre_install" ]] && (invoke pre_install)
-            [[ "$1" == "prepare" ]] && (invoke prepare)
-            [[ "$1" == "build" ]] && (invoke build)
-            [[ "$1" == "post_install" ]] && (enter_fake_root)
+            [[ "$1" == "sources_auto_download" ]] && invoke sources_auto_download
+            [[ "$1" == "pre_install" ]] && invoke pre_install
+            [[ "$1" == "prepare" ]] && invoke prepare
+            [[ "$1" == "build" ]] && invoke build
+            [[ "$1" == "post_install" ]] && enter_fake_root
         fi
     fi
 }
